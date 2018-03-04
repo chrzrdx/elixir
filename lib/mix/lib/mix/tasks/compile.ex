@@ -86,6 +86,8 @@ defmodule Mix.Tasks.Compile do
     Mix.Project.get!()
     Mix.Task.run("loadpaths", args)
 
+    load_mix_config()
+
     {res, diagnostics} =
       Mix.Task.run("compile.all", args)
       |> List.wrap()
@@ -97,7 +99,7 @@ defmodule Mix.Tasks.Compile do
     end
 
     res =
-      if consolidate_protocols?(res) do
+      if consolidate_protocols?(res) and "--no-protocol-consolidation" not in args do
         Mix.Task.run("compile.protocols", args)
         :ok
       else
@@ -167,5 +169,12 @@ defmodule Mix.Tasks.Compile do
 
   defp first_line(doc) do
     String.split(doc, "\n", parts: 2) |> hd |> String.trim() |> String.trim_trailing(".")
+  end
+
+  defp load_mix_config() do
+    if path = System.get_env("MIX_ERL_CONFIG") do
+      {:ok, terms} = :file.consult(path)
+      Mix.Config.persist(terms)
+    end
   end
 end

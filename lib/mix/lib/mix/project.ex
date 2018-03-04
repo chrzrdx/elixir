@@ -430,7 +430,7 @@ defmodule Mix.Project do
   """
   @spec build_path(keyword) :: Path.t()
   def build_path(config \\ config()) do
-    config[:env_path] || env_path(config)
+    System.get_env("MIX_BUILD_PATH") || config[:env_path] || env_path(config)
   end
 
   defp env_path(config) do
@@ -542,10 +542,15 @@ defmodule Mix.Project do
 
   """
   def consolidation_path(config \\ config()) do
-    if umbrella?(config) do
-      Path.join(build_path(config), "consolidated")
-    else
-      Path.join(app_path(config), "consolidated")
+    cond do
+      path = System.get_env("MIX_CONSOLIDATION_PATH") ->
+        path
+
+      umbrella?(config) ->
+        Path.join(build_path(config), "consolidated")
+
+      true ->
+        Path.join(app_path(config), "consolidated")
     end
   end
 

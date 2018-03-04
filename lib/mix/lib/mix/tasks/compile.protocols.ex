@@ -46,8 +46,11 @@ defmodule Mix.Tasks.Compile.Protocols do
   """
   def run(args) do
     config = Mix.Project.config()
-    Mix.Task.run("compile")
     {opts, _, _} = OptionParser.parse(args, switches: [force: :boolean, verbose: :boolean])
+
+    unless "--no-compile" in args do
+      Mix.Task.run("compile")
+    end
 
     manifest = manifest()
     output = Mix.Project.consolidation_path(config)
@@ -94,17 +97,14 @@ defmodule Mix.Tasks.Compile.Protocols do
   end
 
   defp protocols_and_impls(config) do
-    deps = for %{scm: scm, opts: opts} <- Mix.Dep.cached(), not scm.fetchable?, do: opts[:build]
-
-    app =
-      if Mix.Project.umbrella?(config) do
-        []
-      else
-        [Mix.Project.app_path(config)]
-      end
+    paths =
+      config
+      |> Mix.Project.build_path()
+      |> Path.join("lib/*")
+      |> Path.wildcard()
 
     protocols_and_impls =
-      for path <- app ++ deps do
+      for path <- paths do
         manifest_path = Path.join(path, ".mix/compile.elixir")
         compile_path = Path.join(path, "ebin")
         Mix.Compilers.Elixir.protocols_and_impls(manifest_path, compile_path)
